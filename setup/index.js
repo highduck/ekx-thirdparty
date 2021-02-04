@@ -85,8 +85,10 @@ async function setup_imgui() {
 
 async function setup_miniaudio() {
     console.info("miniaudio");
+    //const branch = "master";
+    const branch = "dev";
     await downloadFiles({
-        srcBaseUrl: "https://github.com/mackron/miniaudio/raw/master",
+        srcBaseUrl: `https://github.com/mackron/miniaudio/raw/${branch}`,
         destPath: "../miniaudio/src",
         fileList: [
             "miniaudio.h"
@@ -95,11 +97,6 @@ async function setup_miniaudio() {
             "research/miniaudio_engine.h": "miniaudio_engine.h"
         }
     });
-
-    console.info("apply fix for miniaudio_engine");
-    fs.writeFileSync('../miniaudio/src/miniaudio_engine.h',
-        fs.readFileSync('../miniaudio/fix/miniaudio_engine.h', 'utf8')
-    );
 }
 
 async function setup_pugixml() {
@@ -334,14 +331,14 @@ async function setup_tracy() {
 }
 
 Promise.all([
-    setup_imgui(),
+    // setup_imgui(),
     setup_miniaudio(),
-    setup_pugixml(),
-    setup_stb(),
-    setup_sokol(),
-    setup_sokol_shdc(),
-    setup_miniz(),
-    setup_googletest(),
-    setup_benchmark(),
-    setup_tracy(),
+    // setup_pugixml(),
+    // setup_stb(),
+    // setup_sokol(),
+    // setup_sokol_shdc(),
+    // setup_miniz(),
+    // setup_googletest(),
+    // setup_benchmark(),
+    // setup_tracy(),
 ]).then();
