@@ -331,14 +331,14 @@ async function setup_tracy() {
 }
 
 Promise.all([
-    // setup_imgui(),
+    setup_imgui(),
     setup_miniaudio(),
-    // setup_pugixml(),
-    // setup_stb(),
-    // setup_sokol(),
-    // setup_sokol_shdc(),
-    // setup_miniz(),
-    // setup_googletest(),
-    // setup_benchmark(),
-    // setup_tracy(),
+    setup_pugixml(),
+    setup_stb(),
+    setup_sokol(),
+    setup_sokol_shdc(),
+    setup_miniz(),
+    setup_googletest(),
+    setup_benchmark(),
+    setup_tracy(),
 ]).then();
