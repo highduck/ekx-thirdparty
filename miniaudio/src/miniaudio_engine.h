@@ -895,6 +895,7 @@ MA_API ma_result ma_node_set_state(ma_node* pNode, ma_node_state state);
 MA_API ma_node_state ma_node_get_state(const ma_node* pNode);
 MA_API ma_result ma_node_set_state_time(ma_node* pNode, ma_node_state state, ma_uint64 globalTime);
 MA_API ma_uint64 ma_node_get_state_time(const ma_node* pNode, ma_node_state state);
+MA_API ma_node_state ma_node_get_state_by_time(const ma_node* pNode, ma_uint64 globalTime);
 MA_API ma_node_state ma_node_get_state_by_time_range(const ma_node* pNode, ma_uint64 globalTimeBeg, ma_uint64 globalTimeEnd);
 MA_API ma_uint64 ma_node_get_time(const ma_node* pNode);
 MA_API ma_result ma_node_set_time(ma_node* pNode, ma_uint64 localTime);
@@ -1108,7 +1109,7 @@ typedef struct
             ma_uint16 code;
             ma_uint16 slot;
             ma_uint32 refcount;
-        };
+        } breakup;
         ma_uint64 allocation;
     } toc;  /* 8 bytes. We encode the job code into the slot allocation data to save space. */
     ma_uint64 next;     /* refcount + slot for the next item. Does not include the job code. */
@@ -1759,6 +1760,7 @@ MA_API ma_result ma_sound_init_from_file_w(ma_engine* pEngine, const wchar_t* pF
 #endif
 MA_API ma_result ma_sound_init_from_data_source(ma_engine* pEngine, ma_data_source* pDataSource, ma_uint32 flags, ma_sound_group* pGroup, ma_sound* pSound);
 MA_API void ma_sound_uninit(ma_sound* pSound);
+MA_API ma_engine* ma_sound_get_engine(const ma_sound* pSound);
 MA_API ma_result ma_sound_start(ma_sound* pSound);
 MA_API ma_result ma_sound_stop(ma_sound* pSound);
 MA_API ma_result ma_sound_set_volume(ma_sound* pSound, float volume);
@@ -1793,14 +1795,16 @@ MA_API void ma_sound_set_doppler_factor(ma_sound* pSound, float dopplerFactor);
 MA_API float ma_sound_get_doppler_factor(const ma_sound* pSound);
 MA_API ma_result ma_sound_set_looping(ma_sound* pSound, ma_bool8 isLooping);
 MA_API ma_bool32 ma_sound_is_looping(const ma_sound* pSound);
-MA_API ma_result ma_sound_set_fade_in_frames(ma_sound* pSound, float volumeBeg, float volumeEnd, ma_uint64 fadeLengthInFrames);
+MA_API ma_result ma_sound_set_fade_in_pcm_frames(ma_sound* pSound, float volumeBeg, float volumeEnd, ma_uint64 fadeLengthInFrames);
 MA_API ma_result ma_sound_set_fade_in_milliseconds(ma_sound* pSound, float volumeBeg, float volumeEnd, ma_uint64 fadeLengthInMilliseconds);
 MA_API ma_result ma_sound_get_current_fade_volume(ma_sound* pSound, float* pVolume);
-MA_API ma_result ma_sound_set_start_time(ma_sound* pSound, ma_uint64 absoluteGlobalTimeInFrames);
-MA_API ma_result ma_sound_set_stop_time(ma_sound* pSound, ma_uint64 absoluteGlobalTimeInFrames);
+MA_API ma_result ma_sound_set_start_time_in_pcm_frames(ma_sound* pSound, ma_uint64 absoluteGlobalTimeInFrames);
+MA_API ma_result ma_sound_set_start_time_in_milliseconds(ma_sound* pSound, ma_uint64 absoluteGlobalTimeInMilliseconds);
+MA_API ma_result ma_sound_set_stop_time_in_pcm_frames(ma_sound* pSound, ma_uint64 absoluteGlobalTimeInFrames);
+MA_API ma_result ma_sound_set_stop_time_in_milliseconds(ma_sound* pSound, ma_uint64 absoluteGlobalTimeInMilliseconds);
 MA_API ma_bool32 ma_sound_is_playing(const ma_sound* pSound);
 MA_API ma_bool32 ma_sound_at_end(const ma_sound* pSound);
-MA_API ma_result ma_sound_get_time_in_frames(const ma_sound* pSound, ma_uint64* pTimeInFrames);
+MA_API ma_result ma_sound_get_time_in_pcm_frames(const ma_sound* pSound, ma_uint64* pTimeInFrames);
 MA_API ma_result ma_sound_seek_to_pcm_frame(ma_sound* pSound, ma_uint64 frameIndex); /* Just a wrapper around ma_data_source_seek_to_pcm_frame(). */
 MA_API ma_result ma_sound_get_data_format(ma_sound* pSound, ma_format* pFormat, ma_uint32* pChannels, ma_uint32* pSampleRate);
 MA_API ma_result ma_sound_get_cursor_in_pcm_frames(ma_sound* pSound, ma_uint64* pCursor);
@@ -1808,6 +1812,7 @@ MA_API ma_result ma_sound_get_length_in_pcm_frames(ma_sound* pSound, ma_uint64* 
 
 MA_API ma_result ma_sound_group_init(ma_engine* pEngine, ma_uint32 flags, ma_sound_group* pParentGroup, ma_sound_group* pGroup);
 MA_API void ma_sound_group_uninit(ma_sound_group* pGroup);
+MA_API ma_engine* ma_sound_group_get_engine(const ma_sound_group* pGroup);
 MA_API ma_result ma_sound_group_start(ma_sound_group* pGroup);
 MA_API ma_result ma_sound_group_stop(ma_sound_group* pGroup);
 MA_API ma_result ma_sound_group_set_volume(ma_sound_group* pGroup, float volume);
@@ -1839,13 +1844,15 @@ MA_API void ma_sound_group_set_cone(ma_sound_group* pGroup, float innerAngleInRa
 MA_API void ma_sound_group_get_cone(const ma_sound_group* pGroup, float* pInnerAngleInRadians, float* pOuterAngleInRadians, float* pOuterGain);
 MA_API void ma_sound_group_set_doppler_factor(ma_sound_group* pGroup, float dopplerFactor);
 MA_API float ma_sound_group_get_doppler_factor(const ma_sound_group* pGroup);
-MA_API ma_result ma_sound_group_set_fade_in_frames(ma_sound_group* pGroup, float volumeBeg, float volumeEnd, ma_uint64 fadeLengthInFrames);
+MA_API ma_result ma_sound_group_set_fade_in_pcm_frames(ma_sound_group* pGroup, float volumeBeg, float volumeEnd, ma_uint64 fadeLengthInFrames);
 MA_API ma_result ma_sound_group_set_fade_in_milliseconds(ma_sound_group* pGroup, float volumeBeg, float volumeEnd, ma_uint64 fadeLengthInMilliseconds);
 MA_API ma_result ma_sound_group_get_current_fade_volume(ma_sound_group* pGroup, float* pVolume);
-MA_API ma_result ma_sound_group_set_start_time(ma_sound_group* pGroup, ma_uint64 absoluteGlobalTimeInFrames);
-MA_API ma_result ma_sound_group_set_stop_time(ma_sound_group* pGroup, ma_uint64 absoluteGlobalTimeInFrames);
+MA_API ma_result ma_sound_group_set_start_time_in_pcm_frames(ma_sound_group* pGroup, ma_uint64 absoluteGlobalTimeInFrames);
+MA_API ma_result ma_sound_group_set_start_time_in_milliseconds(ma_sound_group* pGroup, ma_uint64 absoluteGlobalTimeInMilliseconds);
+MA_API ma_result ma_sound_group_set_stop_time_in_pcm_frames(ma_sound_group* pGroup, ma_uint64 absoluteGlobalTimeInFrames);
+MA_API ma_result ma_sound_group_set_stop_time_in_milliseconds(ma_sound_group* pGroup, ma_uint64 absoluteGlobalTimeInMilliseconds);
 MA_API ma_bool32 ma_sound_group_is_playing(const ma_sound_group* pGroup);
-MA_API ma_result ma_sound_group_get_time_in_frames(const ma_sound_group* pGroup, ma_uint64* pTimeInFrames);
+MA_API ma_result ma_sound_group_get_time_in_pcm_frames(const ma_sound_group* pGroup, ma_uint64* pTimeInFrames);
 
 #ifdef __cplusplus
 }
@@ -2303,14 +2310,12 @@ static ma_bool8 ma_node_graph_is_reading(ma_node_graph* pNodeGraph)
 
 static void ma_node_graph_endpoint_process_pcm_frames(ma_node* pNode, const float** ppFramesIn, ma_uint32* pFrameCountIn, float** ppFramesOut, ma_uint32* pFrameCountOut)
 {
-    ma_node_base* pNodeBase = (ma_node_base*)pNode;
-
-    MA_ASSERT(pNodeBase != NULL);
-    MA_ASSERT(ma_node_get_input_bus_count(pNodeBase)  == 1);
-    MA_ASSERT(ma_node_get_output_bus_count(pNodeBase) == 1);
+    MA_ASSERT(pNode != NULL);
+    MA_ASSERT(ma_node_get_input_bus_count(pNode)  == 1);
+    MA_ASSERT(ma_node_get_output_bus_count(pNode) == 1);
 
     /* Input channel count needs to be the same as the output channel count. */
-    MA_ASSERT(ma_node_get_input_channels(pNodeBase, 0) == ma_node_get_output_channels(pNodeBase, 0));
+    MA_ASSERT(ma_node_get_input_channels(pNode, 0) == ma_node_get_output_channels(pNode, 0));
 
     /* We don't need to do anything here because it's a passthrough. */
     (void)pNode;
@@ -2322,7 +2327,7 @@ static void ma_node_graph_endpoint_process_pcm_frames(ma_node* pNode, const floa
 #if 0
     /* The data has already been mixed. We just need to move it to the output buffer. */
     if (ppFramesIn != NULL) {
-        ma_copy_pcm_frames(ppFramesOut[0], ppFramesIn[0], *pFrameCountOut, ma_format_f32, ma_node_get_output_channels(pNodeBase, 0));
+        ma_copy_pcm_frames(ppFramesOut[0], ppFramesIn[0], *pFrameCountOut, ma_format_f32, ma_node_get_output_channels(pNode, 0));
     }
 #endif
 }
@@ -3352,6 +3357,15 @@ MA_API ma_uint64 ma_node_get_state_time(const ma_node* pNode, ma_node_state stat
     return c89atomic_load_64(&((ma_node_base*)pNode)->stateTimes[state]);
 }
 
+MA_API ma_node_state ma_node_get_state_by_time(const ma_node* pNode, ma_uint64 globalTime)
+{
+    if (pNode == NULL) {
+        return ma_node_state_stopped;
+    }
+
+    return ma_node_get_state_by_time_range(pNode, globalTime, globalTime);
+}
+
 MA_API ma_node_state ma_node_get_state_by_time_range(const ma_node* pNode, ma_uint64 globalTimeBeg, ma_uint64 globalTimeEnd)
 {
     ma_node_state state;
@@ -3372,11 +3386,11 @@ MA_API ma_node_state ma_node_get_state_by_time_range(const ma_node* pNode, ma_ui
     it's start time not having been reached yet. Also, the stop time may have also been reached in
     which case it'll be considered stopped.
     */
-    if (ma_node_get_state_time(pNode, ma_node_state_started) >= globalTimeEnd) {
+    if (ma_node_get_state_time(pNode, ma_node_state_started) > globalTimeBeg) {
         return ma_node_state_stopped;   /* Start time has not yet been reached. */
     }
 
-    if (ma_node_get_state_time(pNode, ma_node_state_stopped) <= globalTimeBeg) {
+    if (ma_node_get_state_time(pNode, ma_node_state_stopped) <= globalTimeEnd) {
         return ma_node_state_stopped;   /* Stop time has been reached. */
     }
 
@@ -4923,9 +4937,9 @@ MA_API ma_job ma_job_init(ma_uint16 code)
     ma_job job;
     
     MA_ZERO_OBJECT(&job);
-    job.toc.code = code;
-    job.toc.slot = MA_JOB_SLOT_NONE;    /* Temp value. Will be allocated when posted to a queue. */
-    job.next     = MA_JOB_ID_NONE;
+    job.toc.breakup.code = code;
+    job.toc.breakup.slot = MA_JOB_SLOT_NONE;    /* Temp value. Will be allocated when posted to a queue. */
+    job.next             = MA_JOB_ID_NONE;
 
     return job;
 }
@@ -4996,10 +5010,10 @@ MA_API ma_result ma_job_queue_post(ma_job_queue* pQueue, const ma_job* pJob)
     MA_ASSERT(ma_job_extract_slot(slot) < MA_RESOURCE_MANAGER_JOB_QUEUE_CAPACITY);
 
     /* We need to put the job into memory before we do anything. */
-    pQueue->jobs[ma_job_extract_slot(slot)]                = *pJob;
-    pQueue->jobs[ma_job_extract_slot(slot)].toc.allocation = slot;           /* This will overwrite the job code. */
-    pQueue->jobs[ma_job_extract_slot(slot)].toc.code       = pJob->toc.code; /* The job code needs to be applied again because the line above overwrote it. */
-    pQueue->jobs[ma_job_extract_slot(slot)].next           = MA_JOB_ID_NONE; /* Reset for safety. */
+    pQueue->jobs[ma_job_extract_slot(slot)]                  = *pJob;
+    pQueue->jobs[ma_job_extract_slot(slot)].toc.allocation   = slot;                    /* This will overwrite the job code. */
+    pQueue->jobs[ma_job_extract_slot(slot)].toc.breakup.code = pJob->toc.breakup.code;  /* The job code needs to be applied again because the line above overwrote it. */
+    pQueue->jobs[ma_job_extract_slot(slot)].next             = MA_JOB_ID_NONE;          /* Reset for safety. */
 
     /* The job is stored in memory so now we need to add it to our linked list. We only ever add items to the end of the list. */
     for (;;) {
@@ -5070,7 +5084,7 @@ MA_API ma_result ma_job_queue_next(ma_job_queue* pQueue, ma_job* pJob)
     could instead just leave it on the queue, but that would involve fiddling with the lock-free code above and I want to keep that as simple as
     possible.
     */
-    if (pJob->toc.code == MA_JOB_QUIT) {
+    if (pJob->toc.breakup.code == MA_JOB_QUIT) {
         ma_job_queue_post(pQueue, pJob);
         return MA_CANCELLED;    /* Return a cancelled status just in case the thread is checking return codes and not properly checking for a quit job. */
     }
@@ -5639,7 +5653,7 @@ static ma_thread_result MA_THREADCALL ma_resource_manager_job_thread(void* pUser
         }
 
         /* Terminate if we got a quit message. */
-        if (job.toc.code == MA_JOB_QUIT) {
+        if (job.toc.breakup.code == MA_JOB_QUIT) {
             break;
         }
 
@@ -8332,7 +8346,7 @@ MA_API ma_result ma_resource_manager_process_job(ma_resource_manager* pResourceM
         return MA_INVALID_ARGS;
     }
 
-    switch (pJob->toc.code)
+    switch (pJob->toc.breakup.code)
     {
         /* Data Buffer */
         case MA_JOB_LOAD_DATA_BUFFER: return ma_resource_manager_process_job__load_data_buffer(pResourceManager, pJob);
@@ -10121,7 +10135,7 @@ static void ma_engine_node_process_pcm_frames__sound(ma_node* pNode, const float
                 c89atomic_exchange_8(&pSound->atEnd, MA_TRUE); /* This will be set to false in ma_sound_start(). */
             }
 
-            pRunningFramesOut = ma_offset_pcm_frames_ptr_f32(ppFramesOut[0], totalFramesRead, ma_engine_get_channels(pSound->engineNode.pEngine));
+            pRunningFramesOut = ma_offset_pcm_frames_ptr_f32(ppFramesOut[0], totalFramesRead, ma_engine_get_channels(ma_sound_get_engine(pSound)));
 
             frameCountIn = (ma_uint32)framesJustRead;
             frameCountOut = framesRemaining;
@@ -10383,6 +10397,7 @@ MA_API ma_result ma_engine_init(const ma_engine_config* pConfig, ma_engine* pEng
 
         deviceConfig = ma_device_config_init(ma_device_type_playback);
         deviceConfig.playback.pDeviceID       = engineConfig.pPlaybackDeviceID;
+        deviceConfig.playback.format          = ma_format_f32;
         deviceConfig.playback.channels        = engineConfig.channels;
         deviceConfig.sampleRate               = engineConfig.sampleRate;
         deviceConfig.dataCallback             = ma_engine_data_callback_internal;
@@ -11035,6 +11050,15 @@ MA_API void ma_sound_uninit(ma_sound* pSound)
 #endif
 }
 
+MA_API ma_engine* ma_sound_get_engine(const ma_sound* pSound)
+{
+    if (pSound == NULL) {
+        return NULL;
+    }
+
+    return pSound->engineNode.pEngine;
+}
+
 MA_API ma_result ma_sound_start(ma_sound* pSound)
 {
     if (pSound == NULL) {
@@ -11132,7 +11156,7 @@ MA_API void ma_sound_set_spatialization_enabled(ma_sound* pSound, ma_bool32 enab
 
 MA_API void ma_sound_set_pinned_listener_index(ma_sound* pSound, ma_uint8 listenerIndex)
 {
-    if (pSound == NULL || listenerIndex >= ma_engine_get_listener_count(pSound->engineNode.pEngine)) {
+    if (pSound == NULL || listenerIndex >= ma_engine_get_listener_count(ma_sound_get_engine(pSound))) {
         return;
     }
 
@@ -11387,7 +11411,7 @@ MA_API ma_bool32 ma_sound_is_looping(const ma_sound* pSound)
 }
 
 
-MA_API ma_result ma_sound_set_fade_in_frames(ma_sound* pSound, float volumeBeg, float volumeEnd, ma_uint64 fadeLengthInFrames)
+MA_API ma_result ma_sound_set_fade_in_pcm_frames(ma_sound* pSound, float volumeBeg, float volumeEnd, ma_uint64 fadeLengthInFrames)
 {
     if (pSound == NULL) {
         return MA_INVALID_ARGS;
@@ -11402,7 +11426,7 @@ MA_API ma_result ma_sound_set_fade_in_milliseconds(ma_sound* pSound, float volum
         return MA_INVALID_ARGS;
     }
 
-    return ma_sound_set_fade_in_frames(pSound, volumeBeg, volumeEnd, (fadeLengthInMilliseconds * pSound->engineNode.fader.config.sampleRate) / 1000);
+    return ma_sound_set_fade_in_pcm_frames(pSound, volumeBeg, volumeEnd, (fadeLengthInMilliseconds * pSound->engineNode.fader.config.sampleRate) / 1000);
 }
 
 MA_API ma_result ma_sound_get_current_fade_volume(ma_sound* pSound, float* pVolume)
@@ -11414,7 +11438,7 @@ MA_API ma_result ma_sound_get_current_fade_volume(ma_sound* pSound, float* pVolu
     return ma_fader_get_current_volume(&pSound->engineNode.fader, pVolume);
 }
 
-MA_API ma_result ma_sound_set_start_time(ma_sound* pSound, ma_uint64 absoluteGlobalTimeInFrames)
+MA_API ma_result ma_sound_set_start_time_in_pcm_frames(ma_sound* pSound, ma_uint64 absoluteGlobalTimeInFrames)
 {
     if (pSound == NULL) {
         return MA_INVALID_ARGS;
@@ -11423,7 +11447,16 @@ MA_API ma_result ma_sound_set_start_time(ma_sound* pSound, ma_uint64 absoluteGlo
     return ma_node_set_state_time(pSound, ma_node_state_started, absoluteGlobalTimeInFrames);
 }
 
-MA_API ma_result ma_sound_set_stop_time(ma_sound* pSound, ma_uint64 absoluteGlobalTimeInFrames)
+MA_API ma_result ma_sound_set_start_time_in_milliseconds(ma_sound* pSound, ma_uint64 absoluteGlobalTimeInMilliseconds)
+{
+    if (pSound == NULL) {
+        return MA_INVALID_ARGS;
+    }
+
+    return ma_sound_set_start_time_in_pcm_frames(pSound, absoluteGlobalTimeInMilliseconds * ma_engine_get_sample_rate(ma_sound_get_engine(pSound)) / 1000);
+}
+
+MA_API ma_result ma_sound_set_stop_time_in_pcm_frames(ma_sound* pSound, ma_uint64 absoluteGlobalTimeInFrames)
 {
     if (pSound == NULL) {
         return MA_INVALID_ARGS;
@@ -11432,13 +11465,22 @@ MA_API ma_result ma_sound_set_stop_time(ma_sound* pSound, ma_uint64 absoluteGlob
     return ma_node_set_state_time(pSound, ma_node_state_stopped, absoluteGlobalTimeInFrames);
 }
 
+MA_API ma_result ma_sound_set_stop_time_in_milliseconds(ma_sound* pSound, ma_uint64 absoluteGlobalTimeInMilliseconds)
+{
+    if (pSound == NULL) {
+        return MA_INVALID_ARGS;
+    }
+
+    return ma_sound_set_stop_time_in_pcm_frames(pSound, absoluteGlobalTimeInMilliseconds * ma_engine_get_sample_rate(ma_sound_get_engine(pSound)) / 1000);
+}
+
 MA_API ma_bool32 ma_sound_is_playing(const ma_sound* pSound)
 {
     if (pSound == NULL) {
         return MA_FALSE;
     }
 
-    return ma_node_get_state(pSound) == ma_node_state_started;
+    return ma_node_get_state_by_time(pSound, ma_engine_get_time(ma_sound_get_engine(pSound))) == ma_node_state_started;
 }
 
 MA_API ma_bool32 ma_sound_at_end(const ma_sound* pSound)
@@ -11450,7 +11492,7 @@ MA_API ma_bool32 ma_sound_at_end(const ma_sound* pSound)
     return c89atomic_load_8((ma_bool8*)&pSound->atEnd);
 }
 
-MA_API ma_result ma_sound_get_time_in_frames(const ma_sound* pSound, ma_uint64* pTimeInFrames)
+MA_API ma_result ma_sound_get_time_in_pcm_frames(const ma_sound* pSound, ma_uint64* pTimeInFrames)
 {
     if (pTimeInFrames == NULL) {
         return MA_INVALID_ARGS;
@@ -11579,6 +11621,15 @@ MA_API void ma_sound_group_uninit(ma_sound_group* pGroup)
     which makes the parts below trivial with respect to thread-safety.
     */
     ma_node_uninit(pGroup, &pGroup->engineNode.pEngine->allocationCallbacks);
+}
+
+MA_API ma_engine* ma_sound_group_get_engine(const ma_sound_group* pGroup)
+{
+    if (pGroup == NULL) {
+        return NULL;
+    }
+
+    return pGroup->engineNode.pEngine;
 }
 
 MA_API ma_result ma_sound_group_start(ma_sound_group* pGroup)
@@ -11875,7 +11926,7 @@ MA_API float ma_sound_group_get_doppler_factor(const ma_sound_group* pGroup)
     return ma_spatializer_get_doppler_factor(&pGroup->engineNode.spatializer);
 }
 
-MA_API ma_result ma_sound_group_set_fade_in_frames(ma_sound_group* pGroup, float volumeBeg, float volumeEnd, ma_uint64 fadeLengthInFrames)
+MA_API ma_result ma_sound_group_set_fade_in_pcm_frames(ma_sound_group* pGroup, float volumeBeg, float volumeEnd, ma_uint64 fadeLengthInFrames)
 {
     if (pGroup == NULL) {
         return MA_INVALID_ARGS;
@@ -11890,7 +11941,7 @@ MA_API ma_result ma_sound_group_set_fade_in_milliseconds(ma_sound_group* pGroup,
         return MA_INVALID_ARGS;
     }
 
-    return ma_sound_group_set_fade_in_frames(pGroup, volumeBeg, volumeEnd, (fadeLengthInMilliseconds * pGroup->engineNode.fader.config.sampleRate) / 1000);
+    return ma_sound_group_set_fade_in_pcm_frames(pGroup, volumeBeg, volumeEnd, (fadeLengthInMilliseconds * pGroup->engineNode.fader.config.sampleRate) / 1000);
 }
 
 MA_API ma_result ma_sound_group_get_current_fade_volume(ma_sound_group* pGroup, float* pVolume)
@@ -11902,7 +11953,7 @@ MA_API ma_result ma_sound_group_get_current_fade_volume(ma_sound_group* pGroup, 
     return ma_fader_get_current_volume(&pGroup->engineNode.fader, pVolume);
 }
 
-MA_API ma_result ma_sound_group_set_start_time(ma_sound_group* pGroup, ma_uint64 absoluteGlobalTimeInFrames)
+MA_API ma_result ma_sound_group_set_start_time_in_pcm_frames(ma_sound_group* pGroup, ma_uint64 absoluteGlobalTimeInFrames)
 {
     if (pGroup == NULL) {
         return MA_INVALID_ARGS;
@@ -11911,13 +11962,31 @@ MA_API ma_result ma_sound_group_set_start_time(ma_sound_group* pGroup, ma_uint64
     return ma_node_set_state_time(pGroup, ma_node_state_started, absoluteGlobalTimeInFrames);
 }
 
-MA_API ma_result ma_sound_group_set_stop_time(ma_sound_group* pGroup, ma_uint64 absoluteGlobalTimeInFrames)
+MA_API ma_result ma_sound_group_set_start_time_in_milliseconds(ma_sound_group* pGroup, ma_uint64 absoluteGlobalTimeInMilliseconds)
+{
+    if (pGroup == NULL) {
+        return MA_INVALID_ARGS;
+    }
+
+    return ma_sound_group_set_start_time_in_pcm_frames(pGroup, absoluteGlobalTimeInMilliseconds * ma_engine_get_sample_rate(ma_sound_group_get_engine(pGroup)) / 1000);
+}
+
+MA_API ma_result ma_sound_group_set_stop_time_in_pcm_frames(ma_sound_group* pGroup, ma_uint64 absoluteGlobalTimeInFrames)
 {
     if (pGroup == NULL) {
         return MA_INVALID_ARGS;
     }
 
     return ma_node_set_state_time(pGroup, ma_node_state_stopped, absoluteGlobalTimeInFrames);
+}
+
+MA_API ma_result ma_sound_group_set_stop_time_in_milliseconds(ma_sound_group* pGroup, ma_uint64 absoluteGlobalTimeInMilliseconds)
+{
+    if (pGroup == NULL) {
+        return MA_INVALID_ARGS;
+    }
+
+    return ma_sound_group_set_stop_time_in_pcm_frames(pGroup, absoluteGlobalTimeInMilliseconds * ma_engine_get_sample_rate(ma_sound_group_get_engine(pGroup)) / 1000);
 }
 
 MA_API ma_bool32 ma_sound_group_is_playing(const ma_sound_group* pGroup)
@@ -11929,7 +11998,7 @@ MA_API ma_bool32 ma_sound_group_is_playing(const ma_sound_group* pGroup)
     return ma_node_get_state(pGroup) == ma_node_state_started;
 }
 
-MA_API ma_result ma_sound_group_get_time_in_frames(const ma_sound_group* pGroup, ma_uint64* pTimeInFrames)
+MA_API ma_result ma_sound_group_get_time_in_pcm_frames(const ma_sound_group* pGroup, ma_uint64* pTimeInFrames)
 {
     if (pTimeInFrames == NULL) {
         return MA_INVALID_ARGS;
