@@ -91,7 +91,9 @@
 #define TracyIsConnected false
 
 namespace tracy {
-    inline void SetThreadName(const char* name) {}
+    inline void SetThreadName(const char* name) {
+        (void)name;
+    }
 }
 
 #endif

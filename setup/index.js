@@ -309,7 +309,6 @@ async function setup_tracy() {
         fileList: [
             "Tracy.hpp",
             "TracyClient.cpp",
-            "common/Tracy.h",
             "common/tracy_lz4.cpp",
             "common/tracy_lz4.hpp",
             "common/tracy_lz4hc.cpp",
