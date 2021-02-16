@@ -56,8 +56,9 @@ function downloadFiles(props) {
 
 async function setup_imgui() {
     console.info("imgui");
+    const branch = "docking";
     await downloadFiles({
-        srcBaseUrl: "https://github.com/ocornut/imgui/raw/master",
+        srcBaseUrl: `https://github.com/ocornut/imgui/raw/${branch}`,
         destPath: "../imgui/src",
         fileList: [
             "imconfig.h",
@@ -69,18 +70,55 @@ async function setup_imgui() {
             "imgui_widgets.cpp",
             "imgui_tables.cpp",
             "imstb_textedit.h",
+            "misc/freetype/imgui_freetype.cpp",
+            "misc/freetype/imgui_freetype.h"
         ],
         fileMap: {
             "misc/cpp/imgui_stdlib.h": "imgui_stdlib.h",
-            "misc/cpp/imgui_stdlib.cpp": "imgui_stdlib.cpp"
+            "misc/cpp/imgui_stdlib.cpp": "imgui_stdlib.cpp",
         }
     });
 
     let imguiconfig = fs.readFileSync("../imgui/src/imconfig.h", "utf8");
-    imguiconfig = `#define IMGUI_STB_TRUETYPE_FILENAME   <stb_truetype.h>
+    imguiconfig = `
+#define IMGUI_ENABLE_FREETYPE
+#define IMGUI_DISABLE_STB_TRUETYPE_IMPLEMENTATION
+#define IMGUI_STB_TRUETYPE_FILENAME  <stb_truetype.h>
 #define IMGUI_STB_RECT_PACK_FILENAME  <stb_rect_pack.h>
+
 ` + imguiconfig;
     fs.writeFileSync("../imgui/src/imconfig.h", imguiconfig);
+}
+
+async function setup_fonts() {
+    console.info("fonts");
+
+    const branch = "docking";
+    const tasks = [
+        downloadFiles({
+            srcBaseUrl: `https://github.com/ocornut/imgui/raw/${branch}`,
+            destPath: "../fonts/ttf",
+            fileMap: {
+                "misc/fonts/Cousine-Regular.ttf": "Cousine-Regular.ttf"
+            }
+        }),
+        downloadFiles({
+            srcBaseUrl: `https://github.com/FortAwesome/Font-Awesome/raw/master/webfonts`,
+            destPath: "../fonts/ttf",
+            fileList: [
+                "fa-regular-400.ttf",
+                "fa-solid-900.ttf"
+            ]
+        }),
+        downloadFiles({
+            srcBaseUrl: `https://github.com/juliettef/IconFontCppHeaders/raw/master`,
+            destPath: "../fonts/src",
+            fileList: [
+                "IconsFontAwesome5.h"
+            ]
+        })
+    ];
+    return Promise.all(tasks);
 }
 
 async function setup_miniaudio() {
@@ -88,7 +126,7 @@ async function setup_miniaudio() {
     //const branch = "master";
     const branch = "dev";
     await downloadFiles({
-        srcBaseUrl: `https://github.com/mackron/miniaudio/raw/${branch}`,
+        srcBaseUrl: `https://github.com/eliasku/miniaudio/raw/${branch}`,
         destPath: "../miniaudio/src",
         fileList: [
             "miniaudio.h"
@@ -331,13 +369,14 @@ async function setup_tracy() {
 
 Promise.all([
     setup_imgui(),
-    setup_miniaudio(),
-    setup_pugixml(),
-    setup_stb(),
-    setup_sokol(),
-    setup_sokol_shdc(),
-    setup_miniz(),
-    setup_googletest(),
-    setup_benchmark(),
-    setup_tracy(),
+    setup_fonts(),
+    // setup_miniaudio(),
+    // setup_pugixml(),
+    // setup_stb(),
+    // setup_sokol(),
+    // setup_sokol_shdc(),
+    // setup_miniz(),
+    // setup_googletest(),
+    // setup_benchmark(),
+    // setup_tracy(),
 ]).then();

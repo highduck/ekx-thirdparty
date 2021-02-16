@@ -13,7 +13,12 @@ add_library(${PROJECT_NAME} STATIC
         src/imstb_textedit.h
         src/imgui_stdlib.h
         src/imgui_stdlib.cpp
+        src/misc/freetype/imgui_freetype.cpp
+        src/misc/freetype/imgui_freetype.h
         )
 
 target_include_directories(${PROJECT_NAME} PUBLIC ./src)
-target_link_libraries(${PROJECT_NAME} stb)
+target_link_libraries(${PROJECT_NAME}
+        PUBLIC stb
+        PUBLIC freetype2
+        )
