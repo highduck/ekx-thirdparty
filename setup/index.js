@@ -125,8 +125,10 @@ async function setup_miniaudio() {
     console.info("miniaudio");
     //const branch = "master";
     const branch = "dev";
+    // const fork = "eliasku";
+    const fork = "mackron";
     await downloadFiles({
-        srcBaseUrl: `https://github.com/eliasku/miniaudio/raw/${branch}`,
+        srcBaseUrl: `https://github.com/${fork}/miniaudio/raw/${branch}`,
         destPath: "../miniaudio/src",
         fileList: [
             "miniaudio.h"
@@ -402,7 +404,7 @@ async function setup_tracy() {
 Promise.all([
     // setup_imgui(),
     // setup_fonts(),
-    // setup_miniaudio(),
+    setup_miniaudio(),
     // setup_pugixml(),
     // setup_stb(),
     // setup_sokol(),
@@ -410,5 +412,5 @@ Promise.all([
     // setup_miniz(),
     // setup_googletest(),
     // setup_benchmark(),
-    setup_tracy(),
+    // setup_tracy(),
 ]).then();
